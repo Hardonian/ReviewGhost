@@ -28,25 +28,25 @@
 
 ## Testing
 
-- [ ] URL validation tests pass
-- [ ] SSRF blocking tests pass
-- [ ] Scraper parsing tests pass
-- [ ] Scoring engine tests pass
-- [ ] Verdict threshold tests pass
-- [ ] Degraded state tests pass
-- [ ] Route handling tests pass
+- [x] URL validation tests pass
+- [x] SSRF blocking tests pass
+- [x] Scraper parsing tests pass
+- [x] Scoring engine tests pass
+- [x] Verdict threshold tests pass
+- [x] Degraded state tests pass
+- [x] Route handling tests pass
 
 ## Build
 
-- [ ] npm run lint passes
-- [ ] npm run typecheck passes
-- [ ] npm run build passes
+- [x] npm run lint passes
+- [x] npm run typecheck passes
+- [x] npm run build passes
 
 ## Security
 
-- [ ] SSRF protection verified
-- [ ] Rate limiting verified
-- [ ] No script execution
-- [ ] No external redirects
-- [ ] No unsafe HTML injection
-- [ ] No PII in analytics
+- [x] SSRF protection verified
+- [x] Rate limiting verified
+- [x] No script execution
+- [x] No external redirects
+- [x] No unsafe HTML injection
+- [x] No PII in analytics
