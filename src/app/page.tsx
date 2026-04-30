@@ -227,7 +227,7 @@ export default function Home() {
                 </div>
 
                 <div className="border-t border-raven-900/5 pt-6 mb-6">
-                  <h3 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-4">Risk Signals</h3>
+                  <h2 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-4">Risk Signals</h2>
                   <div className="space-y-1">
                     {result.data.result.signals && result.data.result.signals.map((signal: any, i: number) => (
                       <SignalRow key={i} name={signal.name} score={signal.score} description={signal.description} />
@@ -237,7 +237,7 @@ export default function Home() {
 
                 {result.data.result.evidence && result.data.result.evidence.length > 0 && (
                   <div className="border-t border-raven-900/5 pt-6 mb-6">
-                    <h3 className="font-bold text-xs uppercase tracking-widest text-avoid mb-4">Evidence Snippets</h3>
+                    <h2 className="font-bold text-xs uppercase tracking-widest text-avoid mb-4">Evidence Snippets</h2>
                     <div className="space-y-4">
                       {result.data.result.evidence.map((ev: any, i: number) => (
                         <div key={i} className="p-4 rounded-2xl bg-avoid/5 border-l-4 border-avoid shadow-sm transition-transform hover:scale-[1.01]">
@@ -256,13 +256,13 @@ export default function Home() {
                   <div className="border-t border-raven-900/5 pt-6 mb-6">
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <h3 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Limitations</h3>
+                        <h2 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Limitations</h2>
                         <ul className="text-xs text-raven-500 list-disc list-inside pl-4">
                           {result.data.result.limitations?.map((l: string, i: number) => <li key={i}>{l}</li>)}
                         </ul>
                       </div>
                       <div>
-                        <h3 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Next Steps</h3>
+                        <h2 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Next Steps</h2>
                         <ul className="text-xs text-raven-500 list-disc list-inside pl-4">
                           {result.data.result.nextSteps?.map((step: string, i: number) => <li key={i}>{step}</li>)}
                         </ul>

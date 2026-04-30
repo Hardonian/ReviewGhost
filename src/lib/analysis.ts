@@ -35,7 +35,7 @@ function detectSignals(data: ScrapedData): { signals: SignalDetail[], evidence: 
   if (data.isVerified && data.isVerified.length >= 5) {
     const verifiedCount = data.isVerified.filter(v => v).length;
     const ratio = verifiedCount / data.isVerified.length;
-    if (ratio < 0.2) {
+    if (ratio <= 0.2) {
       addSignal('SIG-S002', `Only ${(ratio*100).toFixed(0)}% of recent reviews are verified purchases.`);
     } else if (ratio > 0.8) {
       addSignal('SIG-G001', `High ratio (${(ratio*100).toFixed(0)}%) of verified purchases.`);
