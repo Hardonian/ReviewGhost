@@ -13,5 +13,5 @@
 ## Content Production Loop
 
 1. **Trend Spotting**: Identify viral products on TikTok/Amazon.
-2. **Analysis**: Run them through ReviewGhost.
-3. **Ghosting Content**: Create "Wait, don't buy this" or "This is actually safe" content based on results.
+2. **Analysis**: Run them through ReviewRaven.
+3. **Raven Content**: Create "Watch the patterns" or "The deception is clear" content based on results.

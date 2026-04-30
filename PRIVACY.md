@@ -1,10 +1,10 @@
 # Privacy Policy
 
-**Last updated:** April 29, 2026
+**Last updated:** April 30, 2026
 
 ## What We Collect
 
-ReviewGhost collects the following anonymous data:
+ReviewRaven collects the following anonymous data:
 
 - **Usage events:** analyze_started, analyze_completed, result_viewed, share_clicked
 - **Rate limiting data:** IP addresses are stored temporarily in memory for rate limiting purposes and are cleared on server restart
@@ -27,7 +27,7 @@ Usage events are aggregated to understand feature adoption and improve the produ
 
 ## Third-Party Services
 
-ReviewGhost fetches product pages from e-commerce sites (Amazon, Walmart, Best Buy) solely to analyze publicly available review data. No personal data is sent to these services.
+ReviewRaven fetches product pages from e-commerce sites (Amazon, Walmart, Best Buy) solely to analyze publicly available review data. No personal data is sent to these services.
 
 ## Contact
 
