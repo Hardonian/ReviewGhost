@@ -1,8 +1,8 @@
-# ReviewGhost
+# ReviewRaven
 
-> Before you buy it, ghost the fake reviews.
+> Before you buy it, ensure the reviews are raving!
 
-ReviewGhost is a single-function B2C app that analyzes product URLs and returns a trust verdict based on review patterns.
+ReviewRaven is a single-function B2C app that analyzes product URLs and returns a trust verdict based on review patterns.
 
 ## What it does
 
