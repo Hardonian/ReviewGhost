@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AnalyzeResponse, ErrorResponse } from '@/lib/types';
 
 function RavenIcon() {
@@ -65,7 +65,16 @@ function ConfidenceMeter({ confidence }: { confidence: number }) {
 
 function SignalRow({ name, score, description }: { name: string; score: number; description: string }) {
   const absScore = Math.abs(score);
-  const barColor = score < 0 ? 'bg-buy' : absScore < 20 ? 'bg-caution/60' : 'bg-avoid';
+  const barRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (barRef.current) {
+      const width = Math.min(100, (absScore / 50) * 100);
+      const color = score < 0 ? 'var(--color-buy)' : absScore < 20 ? 'var(--color-caution)' : 'var(--color-avoid)';
+      barRef.current.style.width = `${width}%`;
+      barRef.current.style.backgroundColor = color;
+    }
+  }, [absScore, score]);
 
   return (
     <div className="py-3 border-b border-raven-100 last:border-b-0">
@@ -75,11 +84,8 @@ function SignalRow({ name, score, description }: { name: string; score: number; 
       </div>
       <div className="w-full h-1.5 bg-raven-100 rounded-full overflow-hidden">
         <div 
-          className="h-full transition-all duration-1000 ease-out signal-bar" 
-          style={{ 
-            '--width': `${Math.min(100, (absScore / 50) * 100)}%`,
-            '--bg': score < 0 ? 'var(--color-buy)' : absScore < 20 ? 'var(--color-caution)' : 'var(--color-avoid)'
-          } as any}
+          ref={barRef}
+          className="h-full transition-all duration-1000 ease-out" 
         />
       </div>
       <p className="mt-1 text-xs text-raven-500">{description}</p>
