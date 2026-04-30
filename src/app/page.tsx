@@ -249,19 +249,19 @@ export default function Home() {
                   </div>
                 )}
 
-                {(result.limitations?.length > 0 || result.nextSteps?.length) && (
+                {(result.data.result.limitations?.length > 0 || result.data.result.nextSteps?.length > 0) && (
                   <div className="border-t border-raven-900/5 pt-6 mb-6">
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <h3 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Limitations</h3>
                         <ul className="text-xs text-raven-500 list-disc list-inside pl-4">
-                          {result.limitations.map((l, i) => <li key={i}>{l}</li>)}
+                          {result.data.result.limitations.map((l: string, i: number) => <li key={i}>{l}</li>)}
                         </ul>
                       </div>
                       <div>
                         <h3 className="font-bold text-xs uppercase tracking-widest text-raven-400 mb-2">Next Steps</h3>
                         <ul className="text-xs text-raven-500 list-disc list-inside pl-4">
-                          {result.nextSteps.map((step, i) => <li key={i}>{step}</li>)}
+                          {result.data.result.nextSteps.map((step: string, i: number) => <li key={i}>{step}</li>)}
                         </ul>
                       </div>
                     </div>
@@ -277,7 +277,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => {
-                      const text = encodeURIComponent(`ReviewRaven Verdict: ${result.verdict} (${result.confidence}% Confidence)\n\nTrust analysis for: ${result.title || 'this product'}\n\n#ReviewRaven #ConsumerSafety`);
+                      const text = encodeURIComponent(`ReviewRaven Verdict: ${result.data.result.verdict} (${result.data.result.confidence}% Confidence)\n\nTrust analysis for: ${result.data.title || 'this product'}\n\n#ReviewRaven #ConsumerSafety`);
                       window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
                     }}
                     className="px-4 py-3 rounded-xl bg-[#1DA1F2] text-white text-sm font-bold hover:opacity-90 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
