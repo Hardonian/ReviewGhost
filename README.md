@@ -49,7 +49,7 @@ npm run test
 ## Verdict thresholds
 
 | Score | Verdict | Meaning |
-|-------|---------|---------|
+| :--- | :--- | :--- |
 | 0–30 | BUY | No significant suspicious patterns detected |
 | 31–60 | CAUTION | Moderate concern — review patterns warrant scrutiny |
 | 61–100 | AVOID | High concern — multiple suspicious patterns detected |

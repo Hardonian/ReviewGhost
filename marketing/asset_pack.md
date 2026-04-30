@@ -379,7 +379,7 @@
 12. "Red Flag! Red Flag!"
 13. "ReviewGhost saved me from junk tech."
 14. "Don't buy until you Ghost."
-15. "Simple. Sharp. Sketpical."
+15. "Simple. Sharp. Skeptical."
 16. "The truth is in the signals."
 17. "Verified? More like manipulated."
 18. "My new shopping addiction: Ghosting everything."
@@ -418,7 +418,7 @@
 16. VERDICT: UNKNOWN
 17. INSUFFICIENT DATA
 18. BLOCKED.
-19. REAL OR REPTITION?
+19. REAL OR REPETITION?
 20. THE GHOST HAS SPOKEN.
 
 ---
