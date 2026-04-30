@@ -1,6 +1,6 @@
 # Review Signals
 
-ReviewGhost analyzes multiple signals to detect suspicious review patterns.
+ReviewRaven analyzes multiple signals to detect suspicious review patterns.
 
 ## Signals Detected
 
@@ -47,7 +47,7 @@ ReviewGhost analyzes multiple signals to detect suspicious review patterns.
 ## False Positive Mitigation
 
 - No single signal determines the verdict
-- All signals are weighted equally
+- All signals are weighted according to category-specific rules
 - Confidence score reflects data limitations
 - UNKNOWN verdict is used when data is insufficient
 

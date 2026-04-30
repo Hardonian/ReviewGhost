@@ -2,7 +2,7 @@
 
 ## Overview
 
-ReviewGhost uses a deterministic, rule-based scoring engine to analyze product review patterns and produce a trust verdict.
+ReviewRaven uses a deterministic, rule-based scoring engine to analyze product review patterns and produce a trust verdict.
 
 ## Input
 

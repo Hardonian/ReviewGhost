@@ -8,17 +8,22 @@ export interface ScrapedData {
   reviewerNames: string[];
   isVerified: boolean[];
   blocked: boolean;
+  degraded?: boolean;
+  failureReason?: string;
+  category?: string;
 }
 
 export interface SignalDetail {
-  id?: string;
   name: string;
-  score: number;
-  description: string;
+  weight: number;
+  explanation: string;
+  score?: number; // legacy alias
+  description?: string; // legacy alias
 }
 
-export interface Evidence {
-  signalId: string;
+export interface EvidenceDetail {
+  signal: string;
+  signalId?: string; // legacy alias
   snippet: string;
   source: string;
 }
@@ -26,21 +31,28 @@ export interface Evidence {
 export interface AnalysisResult {
   verdict: 'BUY' | 'CAUTION' | 'AVOID' | 'UNKNOWN';
   confidence: number;
-  confidenceExplanation?: string;
+  confidenceExplanation: string;
   reasons: string[];
   signals: SignalDetail[];
-  evidence?: Evidence[];
+  evidence: EvidenceDetail[];
   limitations: string[];
-  nextSteps: string[];
+  nextSteps?: string[];
+  degraded?: boolean;
 }
 
 export interface AnalyzeResponse {
   ok: true;
-  data: {
-    url: string;
-    title: string | null;
-    result: AnalysisResult;
-  };
+  url: string;
+  title: string | null;
+  verdict: 'BUY' | 'CAUTION' | 'AVOID' | 'UNKNOWN';
+  confidence: number;
+  confidenceExplanation: string;
+  reasons: string[];
+  signals: SignalDetail[];
+  evidence: EvidenceDetail[];
+  limitations: string[];
+  nextSteps?: string[];
+  degraded?: boolean;
 }
 
 export interface ErrorResponse {
@@ -48,4 +60,5 @@ export interface ErrorResponse {
   code: string;
   message: string;
   retryable: boolean;
+  degraded?: boolean;
 }

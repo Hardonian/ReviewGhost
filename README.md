@@ -1,6 +1,6 @@
 # ReviewRaven
 
-> Before you buy it, ensure the reviews are raving!
+> Watch the patterns, detect the deception.
 
 ReviewRaven is a single-function B2C app that analyzes product URLs and returns a trust verdict based on review patterns.
 
