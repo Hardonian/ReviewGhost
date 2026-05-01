@@ -4,7 +4,7 @@
 export interface CostEntry {
   id: string;
   domain: string;
-  type: 'fetch' | 'retry' | 'cache_miss' | 'blocked_domain' | 'analyzer_runtime';
+  type: 'fetch' | 'retry' | 'cache_miss' | 'cache_hit' | 'blocked_domain' | 'analyzer_runtime';
   costMs: number;
   timestamp: string;
 }
@@ -14,6 +14,7 @@ export interface DomainCostBucket {
   fetchAttempts: number;
   retries: number;
   cacheMisses: number;
+  cacheHits: number;
   blockedDomainEvents: number;
   totalCostMs: number;
   unknownCount: number;
@@ -70,6 +71,7 @@ function updateDomainBucket(domain: string, type: CostEntry['type'], costMs: num
       fetchAttempts: 0,
       retries: 0,
       cacheMisses: 0,
+      cacheHits: 0,
       blockedDomainEvents: 0,
       totalCostMs: 0,
       unknownCount: 0,
@@ -87,6 +89,9 @@ function updateDomainBucket(domain: string, type: CostEntry['type'], costMs: num
       break;
     case 'cache_miss':
       bucket.cacheMisses++;
+      break;
+    case 'cache_hit':
+      bucket.cacheHits++;
       break;
     case 'blocked_domain':
       bucket.blockedDomainEvents++;

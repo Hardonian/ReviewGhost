@@ -9,6 +9,7 @@ import { isCircuitOpen, recordSuccess, recordFailure } from '@reviewraven/shared
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const FETCH_TIMEOUT_MS = 10000;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 function timeoutSignal(ms: number): AbortController {
   const controller = new AbortController();
@@ -68,7 +69,43 @@ export async function scrapeProduct(url: string): Promise<ScrapedData> {
       return { ...baseData, blocked: true, degraded: true, failureReason: 'Redirect detected' };
     }
 
-    const html = await response.text();
+    let html: string;
+    if (response.body && typeof response.body.getReader === 'function') {
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let totalSize = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalSize += value.length;
+        if (totalSize > MAX_RESPONSE_BYTES) {
+          const elapsed = Date.now() - startTime;
+          recordCost({ domain, type: 'fetch', costMs: elapsed });
+          recordFailure(domain);
+          return { ...baseData, blocked: true, degraded: true, failureReason: 'Response exceeded size limit' };
+        }
+        chunks.push(value);
+      }
+      const combined = new Uint8Array(totalSize > MAX_RESPONSE_BYTES ? MAX_RESPONSE_BYTES : totalSize);
+      let offset = 0;
+      for (const chunk of chunks) {
+        const remaining = combined.length - offset;
+        const len = Math.min(chunk.length, remaining);
+        combined.set(chunk.subarray(0, len), offset);
+        offset += len;
+        if (offset >= combined.length) break;
+      }
+      html = new TextDecoder().decode(combined);
+    } else {
+      html = await response.text();
+      if (html.length > MAX_RESPONSE_BYTES) {
+        const elapsed = Date.now() - startTime;
+        recordCost({ domain, type: 'fetch', costMs: elapsed });
+        recordFailure(domain);
+        return { ...baseData, blocked: true, degraded: true, failureReason: 'Response exceeded size limit' };
+      }
+    }
+
     const elapsed = Date.now() - startTime;
     recordCost({ domain, type: 'fetch', costMs: elapsed });
 

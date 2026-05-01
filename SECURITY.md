@@ -11,26 +11,48 @@
 ### SSRF Protection
 
 - Only HTTPS URLs are accepted
-- Internal IP ranges are blocked (10.x, 172.16-31.x, 192.168.x, 127.x)
-- Localhost access is blocked
-- Only allowed e-commerce hosts are processed
+- Internal IP ranges are blocked (10.x, 172.16-31.x, 192.168.x, 127.x, localhost)
+- Only allowed e-commerce hosts are processed (amazon, walmart, bestbuy)
+- Domain extraction and validation before any network request
 
 ### Rate Limiting
 
-- In-memory rate limiting at 5 requests per minute per IP
+- In-memory rate limiting at 5 requests per 60 seconds per IP
 - Prevents abuse of the scraping engine
+
+### Fetch Hardening
+
+- Fetch timeout: 10 seconds (AbortController)
+- Response size cap: 2MB (streaming read with byte counting)
+- No arbitrary JavaScript execution (pure HTML regex parsing)
+- No headless browser or JS evaluation
+- Redirect detection (301/302/303/307/308 blocked)
 
 ### Input Validation
 
 - URL format validation before any processing
 - HTML sanitization of scraped content
-- No script execution — only static HTML parsing
+- Only static HTML parsing via regex
+
+### Circuit Breaker
+
+- Per-domain circuit breaker with 5-failure threshold
+- 60-second cooldown before retry
+- Prevents cascading failures and resource exhaustion
 
 ### Data Handling
 
 - No PII collected or stored
-- No cookies or tracking beyond rate limiting
+- URLs are hashed (SHA-256) before any diagnostic event
+- IP addresses used only for rate limiting (in-memory, no persistence)
 - All analytics are anonymous event counts
+- Metadata sanitized: URLs hashed, PII fields redacted
+
+### Error Handling
+
+- No hard 500 responses to clients
+- All errors gracefully degraded to UNKNOWN verdict
+- Error envelopes with typed codes for programmatic handling
 
 ## Reporting a Vulnerability
 

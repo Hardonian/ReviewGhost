@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { scrapeProduct } from './scraper';
 import { beforeEach, afterEach, vi } from 'vitest';
 
+function mockResponse(status: number, body: string): Response {
+  return {
+    status,
+    text: () => Promise.resolve(body),
+  } as unknown as Response;
+}
+
 describe('scraper', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -22,10 +29,7 @@ describe('scraper', () => {
   });
 
   it('returns blocked state on redirect', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 301,
-      text: () => Promise.resolve(''),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(301, ''));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 
@@ -33,10 +37,7 @@ describe('scraper', () => {
   });
 
   it('returns blocked state on 403/404', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 403,
-      text: () => Promise.resolve(''),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(403, ''));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 
@@ -44,10 +45,7 @@ describe('scraper', () => {
   });
 
   it('returns blocked state when response is too small', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve('<html></html>'),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(200, '<html></html>'));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 
@@ -62,10 +60,7 @@ describe('scraper', () => {
       <body></body>
     </html>`;
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve('<html>' + html + ' '.repeat(600) + '</html>'),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(200, '<html>' + html + ' '.repeat(600) + '</html>'));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 
@@ -83,10 +78,7 @@ describe('scraper', () => {
       </body>
     </html>`;
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve('<html>' + html + ' '.repeat(600) + '</html>'),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(200, '<html>' + html + ' '.repeat(600) + '</html>'));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 
@@ -98,10 +90,7 @@ describe('scraper', () => {
   it('detects captcha and returns blocked', async () => {
     const html = `<html><body><div id="captcha">Please verify you are human</div></body></html>`;
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve('<html>' + html + ' '.repeat(600) + '</html>'),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse(200, '<html>' + html + ' '.repeat(600) + '</html>'));
 
     const result = await scrapeProduct('https://www.amazon.com/dp/B08N5WRWNW');
 

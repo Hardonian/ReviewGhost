@@ -122,6 +122,18 @@ export async function POST(request: Request) {
       diagnosticsId: analysis.diagnosticsId,
     };
 
+    if (analysis.verdict === 'AVOID' || analysis.signals.filter(s => s.type === 'SUSPICIOUS').length >= 3) {
+      recordEvent('high_risk_result', body.url, { verdict: analysis.verdict, confidence: analysis.confidence, metadata: { domain, category } });
+    }
+
+    completeSession(session.sessionId, 'completed');
+
+    safeLog(createSafeLogEntry('info', 'analyze_completed', body.url, {
+      verdict: analysis.verdict,
+      confidence: analysis.confidence,
+      degraded: analysis.degraded,
+    }));
+
     return Response.json(response);
   } catch (error) {
     recordEvent('analyze_failed', body.url, { degraded: true, metadata: { domain, error: 'internal_error' } });

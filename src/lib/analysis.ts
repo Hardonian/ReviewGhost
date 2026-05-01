@@ -125,7 +125,124 @@ function detectSignals(data: ScrapedData): { signals: SignalDetail[], evidence: 
     addSignal('SIG-S005', 'Missing rating or review count suggests suppressed or new listing.');
   }
 
+  detectReviewTimingAnomaly(data, addSignal);
+  detectRatingSkew(data, addSignal);
+  detectLanguageRepetition(data, addSignal);
+  detectVerifiedPurchaseAbsence(data, addSignal);
+  detectSentimentMismatch(data, addSignal);
+  detectReviewerDiversityLow(data, addSignal);
+  detectSuspiciousBurst(data, addSignal);
+  detectCategoryNormalizationFail(data, addSignal);
+
   return { signals, evidence };
+}
+
+function detectReviewTimingAnomaly(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.timestamps || data.timestamps.length < 3) return;
+  const normalized = data.timestamps.map(ts => {
+    const match = ts.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return parseInt(match[3], 10);
+    return -1;
+  }).filter(d => d >= 0);
+  if (normalized.length < 3) return;
+  const earlyHourCount = normalized.filter(d => d <= 5 || d >= 23).length;
+  if (earlyHourCount / normalized.length > 0.6) {
+    addSignal('SIG-R001', 'Reviews posted at unusual hours suggest automated posting.');
+  }
+}
+
+function detectRatingSkew(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.rating || !data.reviewCount) return;
+  if (data.reviewCount >= 10) {
+    if (data.rating >= 4.8) {
+      addSignal('SIG-R002', 'Rating is extremely high with significant review volume, suggesting potential inflation.');
+    } else if (data.rating <= 1.5) {
+      addSignal('SIG-R002', 'Rating is extremely low, indicating widespread product issues.');
+    }
+  }
+}
+
+function detectLanguageRepetition(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.reviewSnippets || data.reviewSnippets.length < 3) return;
+  const phraseLength = 5;
+  const phraseCounts: Record<string, number> = {};
+  for (const snippet of data.reviewSnippets) {
+    const words = snippet.toLowerCase().split(/\s+/);
+    for (let i = 0; i <= words.length - phraseLength; i++) {
+      const phrase = words.slice(i, i + phraseLength).join(' ');
+      if (phrase.length > 15) {
+        phraseCounts[phrase] = (phraseCounts[phrase] || 0) + 1;
+      }
+    }
+  }
+  const sharedPhrases = Object.entries(phraseCounts).filter(([, count]) => count >= 2);
+  if (sharedPhrases.length >= 3) {
+    addSignal('SIG-R003', 'Identical phrases found across multiple reviews.', sharedPhrases[0][0], 'Review Text');
+  }
+}
+
+function detectVerifiedPurchaseAbsence(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (data.isVerified && data.isVerified.length >= 3) {
+    const verifiedCount = data.isVerified.filter(v => v).length;
+    if (verifiedCount === 0) {
+      addSignal('SIG-R004', 'No verified purchase badges on any recent reviews.');
+    }
+  }
+}
+
+function detectSentimentMismatch(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.rating || !data.reviewSnippets || data.reviewSnippets.length === 0) return;
+  const negativeWords = ['terrible', 'awful', 'worst', 'broken', 'useless', 'hate', 'horrible', 'disappointed', 'waste', '垃圾'];
+  const positiveWords = ['great', 'amazing', 'love', 'perfect', 'best', 'excellent', 'wonderful', 'fantastic', 'awesome', 'outstanding'];
+  let negCount = 0;
+  let posCount = 0;
+  for (const snippet of data.reviewSnippets) {
+    const lower = snippet.toLowerCase();
+    if (negativeWords.some(w => lower.includes(w))) negCount++;
+    if (positiveWords.some(w => lower.includes(w))) posCount++;
+  }
+  const total = data.reviewSnippets.length;
+  if (data.rating >= 4.0 && negCount / total > 0.4) {
+    addSignal('SIG-R005', 'High star rating contradicts negative sentiment in review text.');
+  } else if (data.rating <= 2.5 && posCount / total > 0.4) {
+    addSignal('SIG-R005', 'Low star rating contradicts positive sentiment in review text.');
+  }
+}
+
+function detectReviewerDiversityLow(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.reviewerNames || data.reviewerNames.length < 5) return;
+  const uniqueNames = new Set(data.reviewerNames.map(n => n.toLowerCase().trim()));
+  if (uniqueNames.size / data.reviewerNames.length < 0.5) {
+    addSignal('SIG-R006', 'Reviewers share naming patterns or duplicate profile characteristics.');
+  }
+}
+
+function detectSuspiciousBurst(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.timestamps || data.timestamps.length < 5) return;
+  const dateCounts: Record<string, number> = {};
+  for (const ts of data.timestamps) {
+    const match = ts.match(/(\d{4}-\d{2}-\d{2})/);
+    if (match) {
+      const date = match[1];
+      dateCounts[date] = (dateCounts[date] || 0) + 1;
+    }
+  }
+  const values = Object.values(dateCounts);
+  if (values.length < 2) return;
+  const maxReviewsInDay = Math.max(...values);
+  if (maxReviewsInDay >= data.timestamps.length * 0.5) {
+    addSignal('SIG-R007', `Review volume spike detected: ${maxReviewsInDay} reviews posted on a single date.`);
+  }
+}
+
+function detectCategoryNormalizationFail(data: ScrapedData, addSignal: (id: string, explanation: string, evSnippet?: string, evSource?: string) => void) {
+  if (!data.category) return;
+  if (!data.rating || !data.reviewCount) return;
+  if (data.category === 'supplements' && data.rating >= 4.5 && data.reviewCount >= 50) {
+    addSignal('SIG-R008', 'Supplement category with extremely high ratings is inconsistent with industry norms.');
+  } else if (data.category === 'electronics' && data.rating >= 4.9 && data.reviewCount >= 100) {
+    addSignal('SIG-R008', 'Electronics category with near-perfect ratings is inconsistent with industry norms.');
+  }
 }
 
 export function analyzeProduct(data: ScrapedData): {
@@ -147,17 +264,43 @@ export function analyzeProduct(data: ScrapedData): {
 
   const limitations: string[] = [];
   const nextSteps: string[] = [];
+  let isUnknownScenario = false;
 
-  if (data.blocked || data.degraded) {
+  if (data.blocked && data.reviewSnippets.length === 0 && !data.title) {
+    limitations.push('Unable to access product page. Anti-bot or captcha protection prevented data collection.');
+    nextSteps.push('Try a different product URL from the same retailer.');
+    nextSteps.push('Manually verify the seller reputation and return policy.');
+    nextSteps.push('Search for independent reviews of this product elsewhere.');
+    isUnknownScenario = true;
+  } else if (data.blocked || data.degraded) {
     limitations.push(`Data collection was degraded: ${data.failureReason || 'Anti-bot protection'}`);
+    if (data.reviewSnippets.length === 0) {
+      limitations.push('No review text was available to analyze.');
+    }
     nextSteps.push('Try analyzing a different product URL.');
     nextSteps.push('Manually verify the seller and return window.');
+    isUnknownScenario = data.reviewSnippets.length === 0;
   } else {
     nextSteps.push('Check the seller rating independently.');
   }
 
-  if (data.reviewSnippets.length === 0) {
-    limitations.push('No review text was available to analyze.');
+  if (data.reviewSnippets.length === 0 && !isUnknownScenario) {
+    limitations.push('No review text was available to analyze. Verdict is based on metadata only.');
+  }
+
+  if (data.rating === null && !isUnknownScenario) {
+    limitations.push('Product rating could not be extracted. The page may use an unsupported format.');
+    nextSteps.push('Check the product rating directly on the retailer page.');
+  }
+
+  if (data.reviewCount === null && !isUnknownScenario) {
+    limitations.push('Review count could not be determined.');
+    nextSteps.push('Verify the number of reviews on the product page.');
+  }
+
+  if (!isUnknownScenario && signals.length === 0 && (data.reviewSnippets.length < 2)) {
+    limitations.push('Insufficient review data to form a reliable assessment.');
+    nextSteps.push('Look for products with more customer reviews.');
   }
 
   const category = data.category || detectCategory(data.title, '');
@@ -211,7 +354,8 @@ export async function analyzeWithCache(url: string, data: ScrapedData) {
 
   const cached = memoryCache.get(cacheKey) as ReturnType<typeof analyzeProduct> | null;
   if (cached) {
-    recordCost({ domain, type: 'cache_miss', costMs: 0 });
+    recordCost({ domain, type: 'cache_hit', costMs: 0 });
+    recordEvent('cache_hit', url, { verdict: cached.verdict, confidence: cached.confidence, metadata: { domain } });
     return cached;
   }
 
@@ -219,6 +363,9 @@ export async function analyzeWithCache(url: string, data: ScrapedData) {
   if (inFlight) {
     return inFlight;
   }
+
+  recordEvent('cache_miss', url, { metadata: { domain } });
+  recordCost({ domain, type: 'cache_miss', costMs: 0 });
 
   const promise = (async () => {
     const result = analyzeProduct(data);

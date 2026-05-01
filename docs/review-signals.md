@@ -2,85 +2,98 @@
 
 ReviewRaven analyzes multiple signals to detect suspicious review patterns. These signals extend the base signals provided by `@reviewraven/shared-intelligence`.
 
-## Shared-Intelligence Base Signals
+## Signal Detection Architecture
 
-The shared-intelligence package provides generic signal detection:
+Signals are detected in `src/lib/analysis.ts` via the `detectSignals()` function. Each signal has:
+- A unique ID (SIG-S###, SIG-G###, or SIG-R###)
+- A human-readable name
+- A type: `SUSPICIOUS` or `SAFE`
+- A weight (negative for suspicious, positive for safe)
+- An explanation of why the signal fired
 
-| Signal ID | Name | Description |
+Shared signals are looked up via `createReviewRavenRegistry()` which merges:
+- `sharedSignals` from `@reviewraven/shared-intelligence` (SIG-S001-S100, SIG-G001-G027)
+- `reviewSpecificSignals` from `src/lib/review-signals/index.ts` (SIG-R001-R008)
+
+## Shared-Intelligence Base Signals (Active in detectSignals)
+
+| Signal ID | Name | Detection Logic |
 | --- | --- | --- |
-| SIG-001 | Rating Anomaly | Detects unusually high or low average ratings |
-| SIG-002 | Volume Check | Evaluates whether review count is sufficient for analysis |
-| SIG-003 | Language Pattern | Detects stock phrases common in manufactured reviews |
-| SIG-004 | Review Diversity | Measures variation in review length and phrasing |
-| SIG-005 | Keyword Density | Detects promotional language patterns |
-| SIG-006 | Data Quality | Assesses completeness of available product data |
+| SIG-S022 | Duplicate_Timestamps | 3+ reviews with exact same timestamp |
+| SIG-S002 | Verified_Purchase_Deficit | <=20% verified when 5+ reviews |
+| SIG-G001 | Verified_Purchase_Strong | >80% verified when 5+ reviews |
+| SIG-S003 | Superlative_Clumping | >50% of snippets contain superlatives |
+| SIG-S024 | Emotional_Extremity | 4+ exclamation marks or ALL CAPS |
+| SIG-S100 | Ultimate_Suspicion | AI prompt leak ("as an ai", "language model") |
+| SIG-S006 | Opening_Identity / Unique_Phrasing | Identical opening phrases across reviews |
+| SIG-G005 | Natural_Phrasing | Unique phrasing across reviews |
+| SIG-S008 | Author_Patterns | Sequential naming (first 5 chars match) |
+| SIG-S005 | Low_Volume_Risk | Missing rating or review count |
 
 ## ReviewRaven-Specific Signals (SIG-R001 to SIG-R008)
 
-ReviewRaven extends the shared-intelligence signals with domain-specific signals tailored to e-commerce review analysis.
+These are actively detected in `detectSignals()`:
 
-### SIG-R001: Rating Distribution Skew
+### SIG-R001: Review_Timing_Anomaly (weight: -30)
 
-Detects if the distribution of star ratings is unnaturally concentrated at 5 stars. Authentic products typically show a spread across 2-5 stars. A distribution with >80% five-star ratings triggers this signal.
+Detects reviews posted at unusual hours in bulk. If >60% of timestamps map to days 1-5 or 23-31 (suggesting end-of-month automation), fires this signal.
 
-**Extends:** SIG-001 (Rating Anomaly)
+**Detection:** Parses YYYY-MM-DD from timestamps, checks day-of-month distribution.
 
-### SIG-R002: Review Burst Detection
+### SIG-R002: Rating_Skew_Extreme (weight: -25)
 
-Identifies clusters of reviews posted within a short time window. A burst of 10+ reviews within 24 hours on a product with otherwise sparse review history is flagged.
+Detects extremely skewed ratings. Rating >= 4.8 with 10+ reviews suggests inflation. Rating <= 1.5 with 10+ reviews suggests widespread issues.
 
-**Extends:** SIG-002 (Volume Check)
+**Detection:** Checks `data.rating` and `data.reviewCount` thresholds.
 
-### SIG-R003: Stock Phrase Concentration
+### SIG-R003: Language_Repetition (weight: -20)
 
-Measures the concentration of known stock phrases in review text. Phrases include "Great product!", "Love it!", "Highly recommend", "Exactly as described", "Fast shipping", "Best purchase", "Five stars". A concentration above 30% triggers this signal.
+Detects identical 5-word phrases across multiple reviews. If 3+ shared phrases found across the review corpus, fires this signal.
 
-**Extends:** SIG-003 (Language Pattern)
+**Detection:** Sliding window of 5 words across all snippets, counts phrase occurrences.
 
-### SIG-R004: Review Length Uniformity
+### SIG-R004: Verified_Purchase_Absence (weight: -35)
 
-Detects when reviews have suspiciously similar lengths. Authentic reviews vary significantly in word count. If >60% of reviews fall within a 10-word range, this signal fires.
+Detects complete absence of verified purchase badges on 3+ reviews.
 
-**Extends:** SIG-004 (Review Diversity)
+**Detection:** Checks if `data.isVerified` has zero `true` values.
 
-### SIG-R005: Promotional Keyword Density
+### SIG-R005: Sentiment_Text_Mismatch (weight: -25)
 
-Measures density of promotional language: calls-to-action ("Buy now!", "Get yours!"), superlatives in all caps ("AMAZING!!!", "PERFECT!!!"), and repeated exclamation marks. Density above threshold triggers this signal.
+Detects when star rating contradicts review text sentiment. High rating (>=4.0) with >40% negative-sentiment reviews, or low rating (<=2.5) with >40% positive-sentiment reviews.
 
-**Extends:** SIG-005 (Keyword Density)
+**Detection:** Lexicon-based sentiment analysis using positive/negative word lists.
 
-### SIG-R006: Verified Purchase Ratio
+### SIG-R006: Reviewer_Diversity_Low (weight: -20)
 
-Compares the ratio of verified vs. unverified reviews. A low verified purchase ratio (<40%) on a product with many reviews is a low trust signal.
+Detects when <50% of reviewer names are unique (suggesting duplicate or templated profiles).
 
-**New:** ReviewRaven-specific, no shared-intelligence base.
+**Detection:** Compares unique name count to total name count.
 
-### SIG-R007: Reviewer History Pattern
+### SIG-R007: Suspicious_Burst (weight: -40)
 
-Analyzes whether reviewers have a pattern of only leaving 5-star reviews across multiple products. Reviewers with 90%+ five-star history contribute to this signal.
+Detects review volume spike. If 50%+ of all reviews were posted on a single date, fires this signal.
 
-**New:** ReviewRaven-specific, no shared-intelligence base.
+**Detection:** Groups timestamps by date, checks if max daily count >= 50% of total.
 
-### SIG-R008: Cross-Platform Consistency
+### SIG-R008: Category_Normalization_Fail (weight: -15)
 
-Compares the product's rating and review patterns across multiple platforms (e.g., Amazon vs. Walmart). Significant discrepancies (>1.5 star difference) trigger this signal.
+Detects rating patterns inconsistent with category norms. Supplements with >=4.5 rating and 50+ reviews, or electronics with >=4.9 rating and 100+ reviews.
 
-**New:** ReviewRaven-specific, no shared-intelligence base.
+**Detection:** Cross-references `data.category` with rating and review count thresholds.
 
 ## Signal Weighting
 
-Signals are weighted according to category-specific rules. Not all signals carry equal weight:
+Signals are weighted according to category-specific rules defined in `src/lib/intel/categoryRegistry.ts`:
 
-| Signal | Weight | Category |
-| --- | --- | --- |
-| SIG-R001 | 0.15 | Rating |
-| SIG-R002 | 0.10 | Volume |
-| SIG-R003 | 0.20 | Language |
-| SIG-R004 | 0.10 | Diversity |
-| SIG-R005 | 0.15 | Language |
-| SIG-R006 | 0.10 | Verification |
-| SIG-R007 | 0.10 | Reviewer |
-| SIG-R008 | 0.10 | Cross-platform |
+| Category | Adjusted Signals |
+| --- | --- |
+| electronics | SIG-S009 (1.2x), SIG-S010 (0.8x) |
+| apparel | SIG-S002 (1.5x), SIG-S003 (0.8x) |
+| niche | SIG-S010 (0.4x) |
+| digital | SIG-G015 (0x) |
+| tools | SIG-G002 (1.5x) |
+| supplements | SIG-S002 (1.8x), SIG-S009 (1.5x) |
 
 ## False Positive Mitigation
 
@@ -88,6 +101,7 @@ Signals are weighted according to category-specific rules. Not all signals carry
 - All signals are weighted according to category-specific rules
 - Confidence score reflects data limitations
 - UNKNOWN verdict is used when data is insufficient
+- Evidence snippets are provided for suspicious signals
 
 ## What We Do NOT Claim
 
