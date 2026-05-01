@@ -5,7 +5,7 @@ import { ScrapedData } from '@reviewraven/shared-intelligence';
 import { getAdapterForUrl } from './adapters';
 import { recordCost } from '@reviewraven/shared-cost-control';
 import { extractDomain } from '@reviewraven/shared-core';
-import { isCircuitOpen, recordSuccess, recordFailure } from '@reviewraven/shared-infra';
+import { isCircuitOpen, recordSuccess, recordFailure, structuredLog } from '@reviewraven/shared-infra';
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const FETCH_TIMEOUT_MS = 10000;
@@ -124,7 +124,9 @@ export async function scrapeProduct(url: string): Promise<ScrapedData> {
     const partial = await adapter.extract(html, url);
     recordSuccess(domain);
     return { ...baseData, ...partial };
-  } catch {
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    structuredLog('error', 'review-raven', 'scraper_unexpected_error', { metadata: { domain, error: errMsg } });
     recordFailure(domain);
     return { ...baseData, blocked: true, degraded: true, failureReason: 'Unexpected error' };
   }

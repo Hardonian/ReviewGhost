@@ -1,6 +1,6 @@
 import { runHealthChecks } from '@reviewraven/shared-infra';
 
-const VERSION = '0.1.0';
+const VERSION = process.env.npm_package_version || '0.1.0';
 
 export async function GET() {
   const health = await runHealthChecks(VERSION);

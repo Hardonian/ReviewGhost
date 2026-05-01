@@ -38,7 +38,7 @@ export function validateUrl(input: string): ValidationResult {
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(urlString);
-  } catch {
+  } catch (error) {
     return { valid: false, error: 'Invalid URL format', isAllowedHost: false };
   }
 
@@ -76,7 +76,7 @@ export function isAllowedDomain(hostname: string): boolean {
 export function extractDomain(url: string): string {
   try {
     return new URL(url).hostname.toLowerCase();
-  } catch {
+  } catch (error) {
     return 'unknown';
   }
 }

@@ -13,7 +13,7 @@ export function normalizeUrl(input: string): string {
       url.searchParams.delete(param);
     }
     return url.toString().toLowerCase();
-  } catch {
+  } catch (error) {
     return input.toLowerCase().trim();
   }
 }

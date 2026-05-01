@@ -121,7 +121,7 @@ describe('analyzeProduct', () => {
     const result = analyzeProduct(data);
 
     expect(Array.isArray(result.nextSteps)).toBe(true);
-    expect(result.nextSteps!.length).toBeGreaterThan(0);
+    expect(result.nextSteps?.length).toBeGreaterThan(0);
   });
 
   it('applies category-specific weight adjustments (e.g., apparel)', () => {
